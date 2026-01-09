@@ -318,7 +318,10 @@
     <script>
     // --- CORREÇÃO DE CONEXÃO ---
         const BASE_URL = window.location.origin;
-        const PROXY_ROOT = window.location.origin;
+        const PROXY_ROOT = window.location.origin; 
+        
+        // (Opcional) Log para você ver no console se pegou certo
+        console.log("Conectado em:", PROXY_ROOT);
     
         // Configuração do Socket (Geralmente usado na Home)
         const socket = io(PROXY_ROOT);
@@ -522,4 +525,5 @@
 </body>
 
 </html>
+
 
