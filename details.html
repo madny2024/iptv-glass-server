@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Série</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --bg: #050507; --neon: #ff2a6d; --neon-glow: rgba(255, 42, 109, 0.4); --text: #fff; --text-muted: #8b9bb4; --success: #00ff88; --nav-width: 80px; }
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; background: var(--bg); background-image: radial-gradient(circle at 50% 0%, rgba(255,42,109,0.08), transparent 60%); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; } 
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+
+        .nav-rail { width: var(--nav-width); height: 100vh; background: rgba(10, 10, 12, 0.8); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; align-items: center; padding: 30px 0; z-index: 100; flex-shrink: 0; will-change: transform; }
+        .brand-icon { width: 40px; height: 40px; margin-bottom: 50px; color: #00f3ff; filter: drop-shadow(0 0 10px rgba(0,243,255,0.4)); cursor: pointer; transition: transform 0.3s; }
+        .brand-icon:hover { transform: scale(1.1); }
+        .nav-menu { display: flex; flex-direction: column; gap: 30px; flex: 1; width: 100%; align-items: center; }
+        .nav-item { color: #8b9bb4; font-size: 1.4rem; cursor: pointer; transition: all 0.2s; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; text-decoration: none; }
+        .nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .nav-item.active { color: var(--neon); background: rgba(255,255,255,0.05); box-shadow: inset 3px 0 0 0 var(--neon); }
+        .user-profile { width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(45deg, #333, #111); border: 2px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; margin-bottom: 20px; }
+
+        .main-wrapper { flex: 1; height: 100vh; overflow-y: auto; position: relative; }
+        .inner-back { position: absolute; top: 30px; left: 40px; z-index: 50; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 10px 20px; border-radius: 50px; cursor: pointer; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: all 0.2s; backdrop-filter: blur(5px); }
+        .inner-back:hover { background: #fff; color: #000; }
+
+        .hero { position: relative; min-height: 70vh; width: 100%; display: flex; align-items: flex-end; padding-bottom: 50px; margin-bottom: 20px; }
+        .hero-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center top; z-index: -1; mask-image: linear-gradient(to bottom, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%); }
+        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, #050507 0%, rgba(5,5,7,0.7) 40%, transparent 100%), linear-gradient(0deg, #050507 0%, transparent 80%); z-index: 0; }
+        .info-container { position: relative; z-index: 10; width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 40px; display: flex; flex-direction: column; gap: 15px; }
+        .title { font-size: 3.5rem; font-weight: 900; margin: 0; line-height: 1.1; text-shadow: 0 4px 30px rgba(0,0,0,0.9); max-width: 900px; }
+        .meta-row { display: flex; gap: 15px; align-items: center; font-size: 0.95rem; font-weight: 600; color: #ddd; margin-bottom: 10px; }
+        .rating-box { background: #fff; color: #000; padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.8rem; }
+        .desc { font-size: 1.1rem; line-height: 1.6; color: #ccc; max-width: 800px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .content-section { max-width: 1200px; margin: 0 auto 50px auto; padding: 0 40px; position: relative; z-index: 20; }
+        .season-tabs { display: flex; gap: 15px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 15px; }
+        .season-tab { padding: 12px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; white-space: nowrap; font-weight: 700; color: var(--text-muted); transition: all 0.2s; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px; }
+        .season-tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .season-tab.active { background: var(--neon); color: #fff; border-color: var(--neon); box-shadow: 0 5px 20px rgba(255, 42, 109, 0.3); }
+        .season-status { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.3); display: none; }
+        .season-tab.completed .season-status { display: inline-block; background: #fff; color: var(--success); }
+        .season-tab.watching .season-status { display: inline-block; background: rgba(0,0,0,0.4); color: #fff; }
+
+        .episodes-list { display: flex; flex-direction: column; gap: 10px; }
+        .episode-row { display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); padding: 15px 20px; border-radius: 12px; transition: background 0.15s; cursor: pointer; position: relative; overflow: hidden; will-change: background; }
+        .episode-row:hover { background: rgba(255,255,255,0.06); }
+        .ribbon-wrapper { width: 85px; height: 85px; overflow: hidden; position: absolute; top: -3px; left: -3px; pointer-events: none; z-index: 10; display: none; }
+        .ribbon { font: 700 10px "Inter", sans-serif; color: #000; text-transform: uppercase; text-align: center; transform: rotate(-45deg); position: relative; padding: 5px 0; top: 15px; left: -28px; width: 100px; background-color: var(--success); box-shadow: 0 5px 10px rgba(0,0,0,0.5); letter-spacing: 1px; }
+        .episode-row.watched .ribbon-wrapper { display: block; }
+        .episode-row.watched { background: rgba(0, 255, 136, 0.03); border: 1px solid rgba(0, 255, 136, 0.15); }
+        .ep-thumb-wrapper { width: 140px; aspect-ratio: 16/9; border-radius: 6px; overflow: hidden; background: #111; flex-shrink: 0; position: relative; margin-left: 10px; }
+        .ep-thumb { width: 100%; height: 100%; object-fit: cover; }
+        .play-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+        .episode-row:hover .play-overlay { opacity: 1; }
+        .ep-info { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+        .ep-num { font-size: 0.75rem; color: var(--neon); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .ep-title { font-size: 1rem; font-weight: 700; color: #fff; }
+        .ep-dur { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+        .btn-watch-ep { background: #fff; color: #000; font-weight: 800; text-transform: uppercase; padding: 10px 25px; border-radius: 4px; border: none; cursor: pointer; opacity: 0; transform: translateX(20px); transition: opacity 0.2s, transform 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; white-space: nowrap; }
+        .episode-row:hover .btn-watch-ep { opacity: 1; transform: translateX(0); }
+        .btn-check-toggle { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; z-index: 20; }
+        .episode-row.watched .btn-check-toggle { border-color: var(--success); color: var(--success); }
+        .loader-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #050507; z-index: 200; display: flex; justify-content: center; align-items: center; transition: opacity 0.3s; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--neon); border-radius: 50%; animation: spin 0.8s infinite linear; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="loader" class="loader-container"><div class="spinner"></div></div>
+
+    <nav class="nav-rail">
+        <div class="brand-icon" onclick="window.location.href='home.html'">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="100%" height="100%">
+                <path d="M17,11H16.89l-0.78-4.66C15.93,5.18,14.99,4.42,13.88,4.56c-0.28,0.03-0.56,0.11-0.81,0.24 c-0.27-0.12-0.56-0.18-0.86-0.19C11.1,4.48,10.15,5.24,9.97,6.34L9.11,11H9c-1.1,0-2,0.9-2,2v7c0,1.1,0.9,2,2,2h8c1.1,0,2-0.9,2-2 v-7C19,11.9,18.1,11,17,11z M6.98,9.08c0.35-0.08,0.7,0.13,0.79,0.48L8.06,11H7.29L6.5,9.88C6.55,9.52,6.73,9.15,6.98,9.08z M12.56,5.33c0.41,0.27,0.52,0.83,0.25,1.24L12,7.79l-0.75-1.22C10.99,6.16,11.1,5.6,11.52,5.33 C11.83,5.13,12.24,5.13,12.56,5.33z M14.88,5.48c0.44,0.19,0.64,0.71,0.45,1.15L15,7.45l-1.39-0.45C13.43,6.56,13.23,6.04,13.42,5.6 C13.68,5.01,14.28,4.9,14.88,5.48z M16.49,9.08c0.26,0.06,0.44,0.44,0.49,0.79L16.2,11h-0.78L16,9.57C16.1,9.21,16.45,9,16.49,9.08z M17,20H9v-7h8V20z"/>
+            </svg>
+        </div>
+        <div class="nav-menu">
+            <a href="home.html" class="nav-item"><i class="fa-solid fa-layer-group"></i></a>
+            <a href="browse.html?type=live" class="nav-item"><i class="fa-solid fa-tv"></i></a>
+            <a href="browse.html?type=movie" class="nav-item"><i class="fa-solid fa-film"></i></a>
+            <a href="browse.html?type=series" class="nav-item active"><i class="fa-solid fa-clapperboard"></i></a>
+            <a href="remote.html" class="nav-item"><i class="fa-solid fa-gamepad"></i></a>
+        </div>
+        <div class="user-profile" onclick="if(confirm('Sair?')) location.href='index.html'">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" style="width:100%;" loading="lazy">
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+        <button class="inner-back" onclick="window.location.href='browse.html?type=series'">
+            <i class="fa-solid fa-arrow-left"></i> Voltar
+        </button>
+        <div class="hero">
+            <div class="hero-bg" id="heroBg"></div>
+            <div class="hero-overlay"></div>
+            <div class="info-container">
+                <h1 class="title" id="seriesTitle"></h1>
+                <div class="meta-row">
+                    <span class="rating-box" id="rating">0.0</span>
+                    <span id="genre">Gênero</span>
+                    <span style="opacity:0.4;">|</span>
+                    <span id="release">Ano</span>
+                </div>
+                <div class="desc" id="plot">Carregando sinopse...</div>
+            </div>
+        </div>
+        <div class="content-section">
+            <div class="season-tabs" id="seasonTabs"></div>
+            <div class="episodes-list" id="episodesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const PROXY_ROOT = window.location.origin + '/proxy'; 
+        let currentSeriesGenre = 'Série', currentSeriesDate = ''; 
+        window.cachedEpisodesObj = {}; 
+        
+        // Cache otimizado
+        let watchedCache = null;
+        let credentialsCache = null;
+        
+        function getWatchedEpisodes() { 
+            if (watchedCache === null) {
+                const stored = localStorage.getItem('watched_episodes');
+                watchedCache = stored ? JSON.parse(stored) : [];
+            }
+            return watchedCache;
+        }
+        
+        function toggleWatchedEpisode(event, epId) { 
+            event.stopPropagation(); 
+            const watched = getWatchedEpisodes();
+            const index = watched.indexOf(String(epId)); 
+            const row = document.getElementById(`ep-row-${epId}`); 
+            
+            if (index > -1) { 
+                watched.splice(index, 1); 
+                row.classList.remove('watched'); 
+            } else { 
+                watched.push(String(epId)); 
+                row.classList.add('watched'); 
+            } 
+            
+            localStorage.setItem('watched_episodes', JSON.stringify(watched)); 
+            watchedCache = watched;
+            renderSeasons(window.cachedEpisodesObj, false); 
+        }
+        
+        function getCredentials() {
+            if (credentialsCache === null) {
+                credentialsCache = {
+                    host: localStorage.getItem('iptv_host'),
+                    user: localStorage.getItem('iptv_user'),
+                    pass: localStorage.getItem('iptv_pass')
+                };
+            }
+            return credentialsCache;
+        }
+        
+        window.onload = async () => { 
+            const params = new URLSearchParams(window.location.search); 
+            const seriesId = params.get('id'); 
+            
+            if (!seriesId) { 
+                alert('Nenhuma série selecionada.'); 
+                window.location.href = 'browse.html?type=series'; 
+                return; 
+            } 
+            
+            await loadSeriesDetails(seriesId); 
+        };
+        
+        async function loadSeriesDetails(seriesId) {
+            const cred = getCredentials();
+            
+            try {
+                const res = await fetch(`${PROXY_ROOT}?url=${encodeURIComponent(`http://${cred.host}/player_api.php?username=${cred.user}&password=${cred.pass}&action=get_series_info&series_id=${seriesId}`)}`); 
+                const data = await res.json();
+                const loader = document.getElementById('loader');
+                
+                if (!data || (Array.isArray(data) && data.length === 0)) { 
+                    return; 
+                }
+                
+                if (data.info) renderHero(data.info); 
+                else renderHero(data);
+                
+                const episodesData = data.episodes || {}; 
+                window.cachedEpisodesObj = episodesData; 
+                
+                if (Object.keys(episodesData).length > 0) {
+                    renderSeasons(episodesData, true); 
+                } else {
+                    document.getElementById('episodesList').innerHTML = '<div style="padding:40px; color:var(--text-muted); text-align:center;">Nenhum episódio disponível.</div>';
+                }
+                
+                loader.style.opacity = '0'; 
+                setTimeout(() => loader.style.display = 'none', 300);
+            } catch (e) { 
+                console.error(e); 
+            }
+        }
+
+        function renderHero(info) {
+            if(!info) return; 
+            
+            currentSeriesGenre = info.genre || 'Série'; 
+            currentSeriesDate = info.releaseDate || info.release_date || '';
+            
+            document.getElementById('seriesTitle').textContent = info.name || info.title || 'Sem Título'; 
+            document.getElementById('plot').textContent = info.plot || info.description || 'Sinopse indisponível.';
+            
+            const rate = info.rating || info.rating_5based || '0.0'; 
+            document.getElementById('rating').textContent = `${rate}`;
+            document.getElementById('genre').textContent = currentSeriesGenre; 
+            document.getElementById('release').textContent = currentSeriesDate.split('-')[0];
+            
+            let bgUrl = ''; 
+            if(info.backdrop_path && Array.isArray(info.backdrop_path) && info.backdrop_path.length > 0) {
+                bgUrl = info.backdrop_path[0]; 
+            } else if(info.backdrop_path && typeof info.backdrop_path === 'string') {
+                bgUrl = info.backdrop_path; 
+            } else if (info.cover) {
+                bgUrl = info.cover; 
+            }
+            
+            if(bgUrl) {
+                document.getElementById('heroBg').style.backgroundImage = `url('${bgUrl}')`;
+            }
+        }
+
+        function getSeasonStatus(seasonEpisodes) { 
+            const watched = getWatchedEpisodes(); 
+            if(!seasonEpisodes || seasonEpisodes.length === 0) return 'none'; 
+            
+            let countWatched = 0; 
+            seasonEpisodes.forEach(ep => { 
+                if(watched.includes(String(ep.id))) countWatched++; 
+            }); 
+            
+            if (countWatched === 0) return 'none'; 
+            if (countWatched === seasonEpisodes.length) return 'completed'; 
+            return 'watching'; 
+        }
+
+        function renderSeasons(episodesObj, firstLoad) {
+            const tabsContainer = document.getElementById('seasonTabs'); 
+            let activeSeason = document.querySelector('.season-tab.active')?.dataset.season; 
+            
+            let seasons = Object.keys(episodesObj); 
+            if (seasons.length === 0) return; 
+            
+            seasons.sort((a,b) => parseInt(a) - parseInt(b)); 
+            if(!activeSeason) activeSeason = seasons[0];
+            
+            const fragment = document.createDocumentFragment();
+            
+            seasons.forEach((seasonNum) => {
+                const btn = document.createElement('div'); 
+                const isActive = (seasonNum === activeSeason); 
+                btn.className = `season-tab ${isActive ? 'active' : ''}`; 
+                btn.dataset.season = seasonNum;
+                
+                const status = getSeasonStatus(episodesObj[seasonNum]); 
+                let statusHtml = ''; 
+                
+                if(status === 'completed') { 
+                    btn.classList.add('completed'); 
+                    statusHtml = '<span class="season-status">Concluída</span>'; 
+                } else if(status === 'watching') { 
+                    btn.classList.add('watching'); 
+                    statusHtml = '<span class="season-status"><i class="fa-solid fa-play"></i> Continuar</span>'; 
+                }
+                
+                btn.innerHTML = `Temporada ${seasonNum} ${statusHtml}`; 
+                const seasonEps = episodesObj[seasonNum]; 
+                
+                btn.onclick = () => { 
+                    document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active')); 
+                    btn.classList.add('active'); 
+                    renderEpisodes(seasonEps); 
+                }; 
+                
+                fragment.appendChild(btn);
+            });
+            
+            tabsContainer.innerHTML = '';
+            tabsContainer.appendChild(fragment);
+            
+            if(episodesObj[activeSeason]) renderEpisodes(episodesObj[activeSeason]);
+        }
+
+        function renderEpisodes(episodeList) {
+            const listContainer = document.getElementById('episodesList'); 
+            const watchedEps = getWatchedEpisodes();
+            
+            if(!episodeList || episodeList.length === 0) { 
+                listContainer.innerHTML = '<div style="color:#666; padding:20px; text-align:center;">Lista vazia.</div>'; 
+                return; 
+            }
+            
+            const fragment = document.createDocumentFragment();
+            
+            episodeList.forEach(ep => {
+                const row = document.createElement('div'); 
+                row.id = `ep-row-${ep.id}`; 
+                row.className = 'episode-row'; 
+                
+                const isWatched = watchedEps.includes(String(ep.id)); 
+                if(isWatched) row.classList.add('watched');
+                
+                const thumbUrl = (ep.info && ep.info.movie_image) ? ep.info.movie_image : ''; 
+                const imgHtml = thumbUrl ? 
+                    `<img src="${thumbUrl}" class="ep-thumb" loading="lazy" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#222;\\'><i class=\\'fa-solid fa-play fa-lg\\'></i></div>'">` : 
+                    `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#222;"><i class="fa-solid fa-play fa-lg"></i></div>`;
+                
+                let duration = ''; 
+                if(ep.info && ep.info.duration) {
+                    duration = ep.info.duration; 
+                } else if (ep.info && ep.info.duration_secs) { 
+                    const mins = Math.floor(ep.info.duration_secs/60); 
+                    duration = `${mins} min`; 
+                }
+                
+                row.innerHTML = `
+                    <div class="ribbon-wrapper"><div class="ribbon">VISTO</div></div>
+                    <div class="btn-check-toggle" onclick="toggleWatchedEpisode(event, '${ep.id}')">
+                        ${isWatched ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-regular fa-circle"></i>'}
+                    </div>
+                    <div class="ep-thumb-wrapper">
+                        ${imgHtml}
+                        <div class="play-overlay"><i class="fa-solid fa-play fa-2x text-white"></i></div>
+                    </div>
+                    <div class="ep-info">
+                        <div class="ep-num">Episódio ${ep.episode_num}</div>
+                        <div class="ep-title">${ep.title}</div>
+                        <div class="ep-dur">${duration}</div>
+                    </div>
+                    <button class="btn-watch-ep" onclick="playEpisode(event, '${ep.id}', '${ep.season}', '${ep.episode_num}', '${ep.title.replace(/'/g, "\\'")}', '${ep.container_extension}')">
+                        <i class="fa-solid fa-play"></i> ASSISTIR
+                    </button>
+                `;
+                
+                row.onclick = (e) => { 
+                    if(!e.target.closest('.btn-check-toggle') && !e.target.closest('.btn-watch-ep')) {
+                        playEpisode(null, ep.id, ep.season, ep.episode_num, ep.title, ep.container_extension, ep); 
+                    }
+                }; 
+                
+                fragment.appendChild(row);
+            });
+            
+            listContainer.innerHTML = '';
+            listContainer.appendChild(fragment);
+        }
+
+        function playEpisode(e, id, season, num, title, ext, epObj) {
+            if(e) e.stopPropagation();
+            
+            let watched = getWatchedEpisodes(); 
+            if(!watched.includes(String(id))) { 
+                watched.push(String(id)); 
+                localStorage.setItem('watched_episodes', JSON.stringify(watched)); 
+                watchedCache = watched;
+            }
+            
+            const cred = getCredentials();
+            const streamUrl = `http://${cred.host}/series/${cred.user}/${cred.pass}/${id}.${ext || 'mp4'}`; 
+            const seriesName = document.getElementById('seriesTitle').textContent; 
+            const fullTitle = `${seriesName}: S${season}E${num} - ${title}`;
+            
+            const plot = encodeURIComponent(epObj?.info?.plot || document.getElementById('plot').textContent); 
+            const rating = encodeURIComponent(epObj?.info?.rating || document.getElementById('rating').textContent); 
+            const genre = encodeURIComponent(currentSeriesGenre); 
+            const date = encodeURIComponent(currentSeriesDate); 
+            const returnUrl = encodeURIComponent(window.location.href);
+            
+            window.location.href = `player.html?play=${encodeURIComponent(streamUrl)}&return=${returnUrl}&title=${encodeURIComponent(fullTitle)}&plot=${plot}&rating=${rating}&genre=${genre}&date=${date}&type=Série`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IPTV Glass Remote</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;800&display=swap');
+
+        :root { 
+            --bg: #050507; 
+            --neon-blue: #00f3ff; 
+            --neon-pink: #ff2a6d;
+            --glass-panel: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        
+        * { box-sizing: border-box; user-select: none; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Inter', sans-serif;
+            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+            background-image: radial-gradient(circle at top, #13131f 0%, #050507 80%);
+        }
+        
+        .remote-container { 
+            width: 100%; max-width: 420px; height: 100%; max-height: 850px; 
+            display: flex; flex-direction: column; padding-bottom: 30px;
+        }
+
+        /* --- HEADER --- */
+        .header { 
+            padding: 25px 30px; display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid var(--glass-border);
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+        }
+        .app-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 1px; }
+        .app-name span { color: var(--neon-blue); text-shadow: 0 0 15px rgba(0, 243, 255, 0.3); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; box-shadow: 0 0 0 2px rgba(255,255,255,0.1); transition: 0.3s; }
+        .status-dot.online { background: var(--neon-success, #00ff88); box-shadow: 0 0 10px #00ff88; }
+
+        .main-controls { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; padding: 20px 30px; }
+        
+        /* --- ZOOM PANEL (DESIGN MELHORADO) --- */
+        .zoom-panel {
+            background: var(--glass-panel);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .zoom-label {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--bg); padding: 0 15px; font-size: 0.7rem; letter-spacing: 2px;
+            color: #666; font-weight: 700; text-transform: uppercase;
+        }
+
+        .btn-zoom {
+            width: 65px; height: 65px; border-radius: 20px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; font-size: 1.2rem; cursor: pointer; transition: all 0.1s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-zoom:active { transform: scale(0.92); background: rgba(255,255,255,0.1); border-color: var(--neon-blue); color: var(--neon-blue); }
+
+        .zoom-display {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 90px;
+        }
+        .zoom-value { 
+            font-family: 'Rajdhani', sans-serif; font-size: 2.2rem; font-weight: 700; 
+            line-height: 1; transition: 0.2s; 
+        }
+        .btn-reset {
+            margin-top: 5px; background: none; border: none; color: #555; font-size: 0.65rem; 
+            font-weight: 700; letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 5px;
+        }
+        .btn-reset:active { color: #fff; }
+
+        /* --- TIME --- */
+        .time-hero { text-align: center; margin: 10px 0; }
+        .time-curr { font-family: 'Rajdhani', sans-serif; font-size: 4rem; font-weight: 500; line-height: 1; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .time-total { font-family: 'Inter', sans-serif; color: #555; font-size: 0.9rem; font-weight: 600; }
+
+        /* --- SEEKBAR --- */
+        .seek-wrapper { padding: 15px 0; }
+        input[type="range"] { 
+            width: 100%; height: 8px; background: #222; border-radius: 10px; 
+            -webkit-appearance: none; appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb { 
+            -webkit-appearance: none; width: 24px; height: 24px; 
+            background: #fff; border-radius: 50%; box-shadow: 0 0 15px rgba(255,255,255,0.3);
+            border: 4px solid var(--bg);
+        }
+
+        /* --- PLAYBACK CONTROLS --- */
+        .controls-row { display: flex; justify-content: center; align-items: center; gap: 30px; }
+        
+        .btn-ctrl {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+            color: #ddd; font-size: 1.4rem; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-ctrl:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+        
+        .btn-play {
+            width: 90px; height: 90px; font-size: 2.5rem;
+            background: var(--neon-blue); color: #000; border: none;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.25);
+        }
+        .btn-play:active { transform: scale(0.95); box-shadow: 0 0 15px rgba(0, 243, 255, 0.4); }
+
+        /* --- FOOTER ACTIONS --- */
+        .footer-row { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+        .btn-small { 
+            width: 50px; height: 50px; border-radius: 16px; background: transparent; 
+            border: 1px solid #333; color: #666; font-size: 1.1rem;
+        }
+        .btn-small:active { border-color: var(--neon-blue); color: var(--neon-blue); }
+
+    </style>
+</head>
+<body>
+
+    <div class="remote-container">
+        
+        <div class="header">
+            <button onclick="history.back()" style="background:none; border:none; color:#888; font-size:1.2rem;">
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="app-name">IPTV <span>GLASS</span></div>
+            <div id="statusDot" class="status-dot"></div>
+        </div>
+
+        <div class="main-controls">
+
+            <div class="zoom-panel">
+                <div class="zoom-label">ZOOM CONTROL</div>
+                
+                <button class="btn-zoom" id="btnZoomOut">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+
+                <div class="zoom-display">
+                    <div id="zoomValue" class="zoom-value">0</div>
+                    <button class="btn-reset" onclick="resetZoom()">
+                        <i class="fa-solid fa-compress"></i> RESET
+                    </button>
+                </div>
+
+                <button class="btn-zoom" id="btnZoomIn">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="time-hero">
+                <div id="currTime" class="time-curr">0:00:00</div>
+                <div id="totalTime" class="time-total">/ 0:00:00</div>
+            </div>
+
+            <div class="seek-wrapper">
+                <input type="range" id="slider" min="0" max="100" value="0">
+            </div>
+
+            <div class="controls-row">
+                <button class="btn-ctrl" onclick="send('rewind')">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                
+                <button class="btn-ctrl btn-play" onclick="send('playPause')">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+                
+                <button class="btn-ctrl" onclick="send('forward')">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <div class="footer-row">
+                <button class="btn-small" onclick="send('reload')" title="Recarregar">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const socket = io(window.location.origin);
+        
+        // Elementos UI
+        const slider = document.getElementById('slider');
+        const currTimeEl = document.getElementById('currTime');
+        const totalTimeEl = document.getElementById('totalTime');
+        const statusDot = document.getElementById('statusDot');
+        const zoomValueEl = document.getElementById('zoomValue');
+
+        // Estado
+        let durationSecs = 1;
+        let isDragging = false;
+        let zoomCounter = 0; // O Contador de cliques
+
+        // --- SOCKET & SALA ---
+        socket.on('connect', () => {
+            const room = localStorage.getItem('pairing_code');
+            if (room) {
+                socket.emit('join_room', { room: room, type: 'remote' });
+                statusDot.classList.add('online');
+            }
+        });
+        socket.on('disconnect', () => statusDot.classList.remove('online'));
+
+        // --- ENVIO GENÉRICO ---
+        function send(action, val) {
+            if (navigator.vibrate) navigator.vibrate(20);
+            const room = localStorage.getItem('pairing_code');
+            if(room) socket.emit('remote_control', { action, value: val, room });
+        }
+
+        // --- LÓGICA DE ZOOM (CONTADOR + PRESSÃO) ---
+        function updateZoomUI(change) {
+            zoomCounter += change;
+            
+            // Visual do número
+            if (zoomCounter > 0) {
+                zoomValueEl.innerText = "+" + zoomCounter;
+                zoomValueEl.style.color = "#00f3ff"; // Azul Neon
+            } else if (zoomCounter < 0) {
+                zoomValueEl.innerText = zoomCounter;
+                zoomValueEl.style.color = "#ff2a6d"; // Rosa Neon
+            } else {
+                zoomValueEl.innerText = "0";
+                zoomValueEl.style.color = "#fff"; // Branco
+            }
+        }
+
+        function resetZoom() {
+            zoomCounter = 0;
+            updateZoomUI(0);
+            send('fit_screen');
+        }
+
+        // Função para cliques contínuos e atualização do contador
+        function setupZoomButton(elementId, action, changeAmount) {
+            const el = document.getElementById(elementId);
+            let interval;
+
+            const trigger = () => {
+                send(action);
+                updateZoomUI(changeAmount);
+            };
+            
+            const start = (e) => {
+                e.preventDefault();
+                trigger(); // Dispara 1 vez
+                interval = setInterval(trigger, 100); // Repete rápido
+                el.style.borderColor = changeAmount > 0 ? "#00f3ff" : "#ff2a6d";
+                el.style.color = changeAmount > 0 ? "#00f3ff" : "#ff2a6d";
+            };
+
+            const stop = () => {
+                clearInterval(interval);
+                el.style.borderColor = "rgba(255,255,255,0.1)";
+                el.style.color = "#fff";
+            };
+
+            el.addEventListener('mousedown', start);
+            el.addEventListener('touchstart', start);
+            el.addEventListener('mouseup', stop);
+            el.addEventListener('mouseleave', stop);
+            el.addEventListener('touchend', stop);
+        }
+
+        setupZoomButton('btnZoomIn', 'zoom_in', 1);   // Soma 1 no contador
+        setupZoomButton('btnZoomOut', 'zoom_out', -1); // Subtrai 1 no contador
+
+        // --- SLIDER DE TEMPO ---
+        slider.addEventListener('input', (e) => {
+            isDragging = true;
+            const sec = (e.target.value / 100) * durationSecs;
+            currTimeEl.innerText = formatTime(sec);
+        });
+
+        slider.addEventListener('change', (e) => {
+            isDragging = false;
+            const ms = (e.target.value / 100) * (durationSecs * 1000);
+            send('seek', ms);
+        });
+
+        // --- RECEBE DADOS DO APP ---
+        socket.on('player_status', (data) => {
+            if (isDragging) return;
+            
+            durationSecs = (data.duration || 0) / 1000;
+            const current = (data.currentTime || 0) / 1000;
+
+            if(durationSecs > 0) slider.value = (current / durationSecs) * 100;
+            
+            currTimeEl.innerText = formatTime(current);
+            totalTimeEl.innerText = "/ " + formatTime(durationSecs);
+        });
+
+        function formatTime(s) {
+            if(!s || isNaN(s)) return "0:00:00";
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = Math.floor(s % 60);
+            return `${h}:${pad(m)}:${pad(sec)}`;
+        }
+        function pad(n) { return n < 10 ? '0'+n : n; }
+    </script>
+</body>
+</html>

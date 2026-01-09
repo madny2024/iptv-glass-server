@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso IPTV Glass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #050507; --neon: #00f3ff; --glass: rgba(22, 22, 28, 0.85); --text: #fff; }
+        * { box-sizing: border-box; outline: none; }
+        body { 
+            margin: 0; 
+            background-color: var(--bg); 
+            color: var(--text); 
+            font-family: 'Inter', sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background-image: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #050507 80%); 
+        }
+        .login-card { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 40px; 
+            background: var(--glass); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 24px; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6); 
+            animation: floatUp 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        @keyframes floatUp { 
+            from { opacity:0; transform:translateY(20px); } 
+            to { opacity:1; transform:translateY(0); } 
+        }
+        .logo { 
+            text-align: center; 
+            font-size: 1.8rem; 
+            font-weight: 800; 
+            margin-bottom: 30px; 
+            letter-spacing: -1px; 
+        }
+        .logo span { 
+            color: var(--neon); 
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.4); 
+        }
+        .input-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            font-size: 0.75rem; 
+            color: #8b9bb4; 
+            margin-bottom: 8px; 
+            font-weight: 600; 
+        }
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            background: rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 12px; 
+            color: #fff; 
+            font-size: 0.95rem; 
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; 
+        }
+        input:focus { 
+            border-color: var(--neon); 
+            background: rgba(0,0,0,0.6); 
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); 
+        }
+        .row { 
+            display: grid; 
+            grid-template-columns: 3fr 1fr; 
+            gap: 15px; 
+        }
+        button { 
+            width: 100%; 
+            padding: 16px; 
+            margin-top: 10px; 
+            background: linear-gradient(90deg, #00f3ff, #00a8ff); 
+            border: none; 
+            border-radius: 12px; 
+            color: #000; 
+            font-weight: 800; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            transition: transform 0.2s, box-shadow 0.2s; 
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2); 
+        }
+        button:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.5); 
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .check-group { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            cursor: pointer; 
+            margin-top: 5px; 
+        }
+        .check-group input { 
+            width: 18px; 
+            height: 18px; 
+            accent-color: var(--neon); 
+            cursor: pointer; 
+            margin: 0; 
+        }
+        .check-group span { 
+            font-size: 0.85rem; 
+            color: #8b9bb4; 
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">IPTV <span>ACCESS</span></div>
+        <form id="loginForm" onsubmit="saveAndEnter(event)">
+            <div class="row">
+                <div class="input-group">
+                    <label>Host / DNS</label>
+                    <input type="text" id="host" placeholder="servidor.com" autocomplete="off" required>
+                </div>
+                <div class="input-group">
+                    <label>Porta</label>
+                    <input type="number" id="port" placeholder="80" autocomplete="off">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Usuário</label>
+                <input type="text" id="user" placeholder="Usuario" autocomplete="username" required>
+            </div>
+            <div class="input-group">
+                <label>Senha</label>
+                <input type="password" id="pass" placeholder="Senha" autocomplete="current-password" required>
+            </div>
+            <label class="check-group">
+                <input type="checkbox" id="remember">
+                <span>Lembrar dados</span>
+            </label>
+            <button type="submit" id="btnSubmit">CONECTAR</button>
+        </form>
+    </div>
+    
+    <script>
+        // Cache dos elementos do DOM
+        const elements = {
+            host: null,
+            port: null,
+            user: null,
+            pass: null,
+            remember: null,
+            btnSubmit: null
+        };
+
+        // Inicialização otimizada
+        function init() {
+            // Cache de elementos
+            elements.host = document.getElementById('host');
+            elements.port = document.getElementById('port');
+            elements.user = document.getElementById('user');
+            elements.pass = document.getElementById('pass');
+            elements.remember = document.getElementById('remember');
+            elements.btnSubmit = document.getElementById('btnSubmit');
+
+            // Carrega dados salvos (se existirem)
+            loadSavedCredentials();
+
+            // Auto-focus no primeiro campo vazio
+            autoFocusFirstEmpty();
+        }
+
+        function loadSavedCredentials() {
+            const savedHost = localStorage.getItem('iptv_host');
+            
+            if(savedHost) {
+                elements.host.value = savedHost;
+                elements.port.value = localStorage.getItem('iptv_port') || '';
+                elements.user.value = localStorage.getItem('iptv_user') || '';
+                elements.pass.value = localStorage.getItem('iptv_pass') || '';
+                elements.remember.checked = true;
+            }
+        }
+
+        function autoFocusFirstEmpty() {
+            if(!elements.host.value) {
+                elements.host.focus();
+            } else if(!elements.user.value) {
+                elements.user.focus();
+            } else if(!elements.pass.value) {
+                elements.pass.focus();
+            }
+        }
+
+        function saveAndEnter(event) {
+            event.preventDefault();
+
+            // Valores dos campos
+            const host = elements.host.value.trim();
+            const port = elements.port.value.trim();
+            const user = elements.user.value.trim();
+            const pass = elements.pass.value.trim();
+
+            // Validação rápida
+            if (!host || !user || !pass) {
+                alert("Preencha todos os campos obrigatórios!");
+                return;
+            }
+
+            // Desabilita botão para evitar múltiplos cliques
+            elements.btnSubmit.disabled = true;
+            elements.btnSubmit.textContent = "AUTENTICANDO...";
+
+            // Salva ou remove credenciais
+            if (elements.remember.checked) {
+                // Batch de operações localStorage
+                const credentials = {
+                    iptv_host: host,
+                    iptv_port: port || '80',
+                    iptv_user: user,
+                    iptv_pass: pass
+                };
+
+                Object.entries(credentials).forEach(([key, value]) => {
+                    localStorage.setItem(key, value);
+                });
+            } else {
+                // Remove todas de uma vez
+                ['iptv_host', 'iptv_port', 'iptv_user', 'iptv_pass'].forEach(key => {
+                    localStorage.removeItem(key);
+                });
+            }
+
+            // Redireciona com delay mínimo
+            setTimeout(() => {
+                window.location.href = "home.html";
+            }, 300);
+        }
+
+        // Inicializa quando DOM estiver pronto
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        // Atalho Enter em qualquer campo
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                const form = document.getElementById('loginForm');
+                if (form.checkValidity()) {
+                    saveAndEnter(e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

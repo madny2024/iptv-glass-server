@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player - Cinema Experience</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;700;900&display=swap');
+
+        :root {
+            --netflix-red: #E50914;
+            --netflix-black: #141414;
+            --neon: #00f3ff;
+        }
+
+        body {
+            background-color: var(--netflix-black);
+            color: white;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* FUNDO */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            background-size: cover;
+            background-position: center;
+            filter: blur(30px) brightness(0.4);
+            transform: scale(1.1);
+            z-index: -1;
+            transition: background-image 1s ease-in-out;
+        }
+
+        /* PLAYER CONTAINER */
+        .player-container {
+            width: 100%;
+            max-width: 960px;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.4s ease;
+            overflow: hidden;
+        }
+
+        .player-container:hover {
+            transform: scale(1.01);
+            border-color: var(--netflix-red);
+        }
+
+        /* --- BOTÃO VOLTAR PREMIUM --- */
+        .nav-back {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            z-index: 50;
+        }
+
+        .btn-back-premium {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-back-premium:hover {
+            background: white;
+            color: black;
+            border-color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-back-premium i {
+            font-size: 1rem;
+        }
+
+        /* STATUS E CONTROLE */
+        .top-right-group {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 50;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff2a6d;
+            transition: 0.3s;
+        }
+
+        .dot.online {
+            background: #00f3ff;
+            box-shadow: 0 0 10px #00f3ff;
+        }
+
+        .btn-control-top {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon);
+            color: var(--neon);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            text-decoration: none;
+        }
+
+        .btn-control-top:hover {
+            background: var(--neon);
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+
+        /* BARRA DE URL */
+        .url-group {
+            display: flex;
+            width: 100%;
+            max-width: 960px;
+            margin-top: 25px;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .url-pill {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            height: 55px;
+            padding-left: 15px;
+        }
+
+        #urlInput {
+            background: transparent;
+            border: none;
+            color: #ccc;
+            width: 100%;
+            font-family: monospace;
+            font-size: 0.95rem;
+            outline: none;
+            padding: 0 15px;
+        }
+
+        #btnPlay {
+            background: linear-gradient(135deg, var(--netflix-red) 0%, #b20710 100%);
+            color: white;
+            border: none;
+            padding: 0 30px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        #btnPlay:hover {
+            filter: brightness(1.2);
+        }
+
+        /* BOTÕES DE AÇÃO */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 960px;
+            margin-top: 15px;
+        }
+
+        .btn-action {
+            flex: 1;
+            height: 50px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-action:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        @keyframes netflixIntro {
+            from {
+                opacity: 0;
+                transform: scale(1.05);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .main-content {
+            animation: netflixIntro 1s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        #trailerFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+            background: #000;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+        }
+
+        #mediaTitle {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            display: block;
+            width: 100%;
+            line-height: 1.1;
+        }
+
+        .loading-spin {
+            animation: spin 1s infinite linear;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="bgOverlay" class="bg-overlay"></div>
+
+    <div class="nav-back">
+        <button id="btnBack" class="btn-back-premium">
+            <i class="fa-solid fa-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    <div class="top-right-group">
+        <button class="btn-control-top" onclick="openRemotePage()">
+            <i class="fa-solid fa-gamepad"></i> Controle App
+        </button>
+        <div class="status-badge">
+            <div id="proxyDot" class="dot"></div><span id="proxyText" class="text-gray-300 ml-2">...</span>
+        </div>
+    </div>
+
+    <main class="main-content w-full max-w-5xl px-6 flex flex-col items-center">
+
+        <div class="mb-6 text-left w-full max-w-[960px]">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="text-red-600 font-black text-xl tracking-tighter">N</span>
+                <span id="metaType" class="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase">STREAM</span>
+            </div>
+
+            <h1 id="mediaTitle"
+                class="text-4xl md:text-6xl font-black uppercase tracking-tighter italic text-white drop-shadow-lg"
+                style="font-size: 3.75rem;">
+                CARREGANDO...
+            </h1>
+
+            <div id="metaLine" class="flex items-center gap-3 mt-2 text-sm font-bold text-gray-300"></div>
+        </div>
+
+        <div class="player-container overflow-hidden group relative">
+            <video id="videoElement" controls crossorigin="anonymous"></video>
+            <iframe id="trailerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <button id="closeTrailerBtn" onclick="stopTrailer()"
+                class="hidden absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded font-bold z-50 hover:bg-red-700 shadow-lg text-xs tracking-wider">FECHAR
+                TRAILER</button>
+        </div>
+
+        <div class="url-group">
+            <div class="url-pill">
+                <i class="fa-solid fa-link text-red-600 ml-2 mr-2"></i>
+                <input type="text" id="urlInput" placeholder="Link direto do vídeo..." autocomplete="off">
+            </div>
+            <button id="btnPlay" onclick="playLocal()">
+                <i class="fa-solid fa-play"></i> REPRODUZIR
+            </button>
+        </div>
+
+        <div class="action-buttons">
+            <button id="btnTrailer" class="btn-action" onclick="playTrailer()">
+                <i id="iconTrailer" class="fa-brands fa-youtube text-red-500"></i> <span id="txtTrailer">Trailer</span>
+            </button>
+
+            <button id="btnCast" class="btn-action">
+                <i class="fa-solid fa-mobile-screen text-blue-400"></i> Enviar para App
+            </button>
+        </div>
+
+        <div class="mt-8 w-full max-w-[960px] text-gray-400 text-sm leading-relaxed">
+            <p><span class="text-white font-bold">Sinopse:</span> <span id="metaPlot">Buscando informações...</span></p>
+        </div>
+    </main>
+
+    <script>
+        const PROXY_ROOT = window.location.origin;
+        const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJjNTk2OTNkNDAzN2UzNDI1ZDJlNTQxYTcyZWM1ZDkwZCIsIm5iZiI6MTc1Mjk2MDIwNy4yOTYsInN1YiI6IjY4N2MwY2NmODA5YjI0OWZjNjI0NDFkYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.d1UDyHMDUUgnSqXkySVgHM9EJObu_773VXMTBvtUTyw";
+        const socket = io(PROXY_ROOT);
+
+        const UI = {
+            input: document.getElementById('urlInput'),
+            video: document.getElementById('videoElement'),
+            trailerFrame: document.getElementById('trailerFrame'),
+            bg: document.getElementById('bgOverlay'),
+            title: document.getElementById('mediaTitle'),
+            metaLine: document.getElementById('metaLine'),
+            type: document.getElementById('metaType'),
+            plot: document.getElementById('metaPlot'),
+            closeTrailer: document.getElementById('closeTrailerBtn'),
+            proxyDot: document.getElementById('proxyDot'),
+            proxyText: document.getElementById('proxyText')
+        };
+
+        let currentTmdbId = null, currentType = 'movie', currentTitleForSearch = '', rawNameForSearch = '';
+        let activeMpegtsPlayer = null; // Controle do player ao vivo
+        let reconnectTimer = null; // Timer para evitar flood de reconexão
+
+        window.onload = () => {
+            checkConnection();
+            const params = new URLSearchParams(window.location.search);
+            const autoPlayUrl = params.get('play');
+            const returnUrl = params.get('return');
+
+            let rawTitle = decodeURIComponent(params.get('title') || 'IPTV PLAYER');
+            rawNameForSearch = rawTitle;
+
+            let type = params.get('type') || 'Filme';
+            let plot = params.get('plot');
+
+            UI.title.innerText = rawTitle;
+            UI.type.innerText = type;
+            currentType = (type === 'Série' || type === 'Séries') ? 'tv' : 'movie';
+
+            if (type === 'TV Ao Vivo') {
+                setupLiveTvMode();
+            } else {
+                if (plot && plot !== 'null' && plot !== 'Sem descrição') {
+                    UI.plot.innerText = decodeURIComponent(plot);
+                    updateMetaUI(decodeURIComponent(params.get('rating') || '0'), decodeURIComponent(params.get('date') || ''), decodeURIComponent(params.get('genre') || ''), '');
+                }
+                findAndSyncTMDB(rawTitle, currentType);
+            }
+
+            document.getElementById('btnBack').onclick = () => {
+                if (returnUrl && returnUrl !== 'null') window.location.href = decodeURIComponent(returnUrl);
+                else history.back();
+            };
+
+            if (autoPlayUrl) {
+                UI.input.value = decodeURIComponent(autoPlayUrl);
+                setTimeout(playLocal, 500);
+            }
+        };
+
+        function openRemotePage() {
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `remote.html?return=${currentUrl}`;
+        }
+
+        // 🔥 BOTÃO CAST ATUALIZADO COM PAIRING CODE
+        document.getElementById('btnCast').addEventListener('click', () => {
+            const url = UI.input.value.trim();
+            const pairingCode = localStorage.getItem('pairing_code');
+
+            if (!url) return alert('Sem URL para enviar.');
+            if (!pairingCode) return alert('Por favor, gere um código de pareamento na Home antes.');
+
+            socket.emit('cast_video', {
+                room: pairingCode,
+                url: url,
+                title: UI.title.innerText
+            });
+
+            const btn = document.getElementById('btnCast');
+            btn.innerHTML = '<i class="fa-solid fa-check text-green-400"></i> ENVIADO!';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-mobile-screen text-blue-400"></i> Enviar para App';
+            }, 2000);
+        });
+
+        // --- PLAY LOCAL COM RECONEXÃO INTELIGENTE ---
+        function playLocal() {
+            stopTrailer();
+            const url = UI.input.value.trim();
+            if (!url) return alert("URL inválida.");
+
+            const params = new URLSearchParams(window.location.search);
+            const isLive = params.get('type') === 'TV Ao Vivo';
+            const bridgeUrl = `${PROXY_ROOT}/proxy?url=${encodeURIComponent(url)}`;
+
+            // Limpa player anterior se existir
+            if (activeMpegtsPlayer) {
+                activeMpegtsPlayer.destroy();
+                activeMpegtsPlayer = null;
+            }
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+
+            if (url.includes('.mp4') || url.includes('.mkv') || url.includes('.avi')) {
+                // VOD (Vídeo Gravado)
+                UI.video.src = bridgeUrl;
+                UI.video.play();
+            } else if (mpegts.getFeatureList().mseLivePlayback) {
+                // LIVE (MPEGTS) - CANAIS DE TV
+                activeMpegtsPlayer = mpegts.createPlayer({
+                    type: 'mpegts',
+                    url: bridgeUrl,
+                    isLive: true,
+                    cors: true,
+                    enableStashBuffer: false // Menor latência
+                });
+
+                activeMpegtsPlayer.attachMediaElement(UI.video);
+                activeMpegtsPlayer.load();
+                activeMpegtsPlayer.play();
+
+                // Lógica de Reconexão para MPEGTS
+                activeMpegtsPlayer.on(mpegts.Events.ERROR, (type, details) => {
+                    console.log("[MPEGTS ERROR]", type, details);
+                    if (isLive) {
+                        console.log("Tentando reconectar TV...");
+                        if (reconnectTimer) clearTimeout(reconnectTimer);
+                        reconnectTimer = setTimeout(playLocal, 2000); // Tenta de novo em 2s
+                    }
+                });
+
+            } else {
+                // FALLBACK NATIVO
+                UI.video.src = bridgeUrl;
+                UI.video.play();
+            }
+
+            // Lógica de Reconexão Genérica (Para qualquer tipo)
+            UI.video.onerror = () => {
+                console.log("[VIDEO ERROR] Falha no player nativo.");
+                if (isLive) {
+                    if (reconnectTimer) clearTimeout(reconnectTimer);
+                    reconnectTimer = setTimeout(playLocal, 2000);
+                }
+            };
+
+            // Se for live e "acabar" (buffer vazio), tenta recarregar
+            UI.video.onended = () => {
+                if (isLive) {
+                    console.log("[LIVE ENDED] Stream cortou, reconectando...");
+                    if (reconnectTimer) clearTimeout(reconnectTimer);
+                    reconnectTimer = setTimeout(playLocal, 1000);
+                }
+            };
+        }
+
+        async function findAndSyncTMDB(queryName, type) {
+            const cleanName = cleanTitle(queryName);
+            console.log(`[TMDB] Buscando: "${cleanName}"`);
+
+            try {
+                let res = await fetch(`https://api.themoviedb.org/3/search/${type === 'tv' ? 'tv' : 'movie'}?query=${encodeURIComponent(cleanName)}&language=pt-BR`, { headers: { 'Authorization': `Bearer ${TMDB_TOKEN}` } });
+                let data = await res.json();
+
+                if (!data.results || data.results.length === 0) {
+                    res = await fetch(`https://api.themoviedb.org/3/search/${type === 'tv' ? 'tv' : 'movie'}?query=${encodeURIComponent(cleanName)}&language=en-US`, { headers: { 'Authorization': `Bearer ${TMDB_TOKEN}` } });
+                    data = await res.json();
+                }
+
+                if (data.results && data.results[0]) {
+                    const item = data.results[0];
+                    currentTmdbId = item.id;
+                    currentTitleForSearch = type === 'tv' ? item.name : item.title;
+                    UI.title.innerText = currentTitleForSearch;
+
+                    if (item.backdrop_path) UI.bg.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('https://image.tmdb.org/t/p/original${item.backdrop_path}')`;
+                    if (!UI.plot.innerText || UI.plot.innerText.includes('Buscando')) updateUIWithTMDB(item, type === 'tv');
+                } else {
+                    currentTitleForSearch = cleanName;
+                }
+            } catch (e) { console.error("Erro API:", e); currentTitleForSearch = cleanName; }
+        }
+
+        async function playTrailer() {
+            const icon = document.getElementById('iconTrailer');
+            const txt = document.getElementById('txtTrailer');
+            icon.className = "fa-solid fa-circle-notch loading-spin text-white";
+            txt.innerText = "BUSCANDO...";
+
+            let foundOfficial = false;
+
+            if (currentTmdbId) {
+                try {
+                    const res = await fetch(`https://api.themoviedb.org/3/${currentType}/${currentTmdbId}/videos?language=pt-BR`, { headers: { 'Authorization': `Bearer ${TMDB_TOKEN}` } });
+                    const data = await res.json();
+                    let video = data.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
+                    if (!video) {
+                        const resEn = await fetch(`https://api.themoviedb.org/3/${currentType}/${currentTmdbId}/videos?language=en-US`, { headers: { 'Authorization': `Bearer ${TMDB_TOKEN}` } });
+                        const dataEn = await resEn.json();
+                        video = dataEn.results.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
+                    }
+                    if (video) { loadYoutubeEmbed(video.key, false); foundOfficial = true; }
+                } catch (e) { console.error("TMDB Falhou"); }
+            }
+
+            if (!foundOfficial) {
+                let searchName = cleanTitle(currentTitleForSearch || rawNameForSearch);
+                const query = `${searchName} Trailer`;
+                console.log(`[TRAILER] Fallback: "${query}"`);
+                loadYoutubeEmbed(query, true);
+            }
+
+            setTimeout(() => {
+                icon.className = "fa-brands fa-youtube text-red-500";
+                txt.innerText = "Trailer";
+            }, 1000);
+        }
+
+        function loadYoutubeEmbed(idOrQuery, isSearch) {
+            UI.video.style.display = 'none'; UI.video.pause();
+            UI.trailerFrame.style.display = 'block'; UI.closeTrailer.classList.remove('hidden');
+
+            if (isSearch) {
+                UI.trailerFrame.src = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(idOrQuery)}&autoplay=1&mute=1`;
+            } else {
+                UI.trailerFrame.src = `https://www.youtube-nocookie.com/embed/${idOrQuery}?autoplay=1&mute=1`;
+            }
+        }
+
+        function stopTrailer() { UI.trailerFrame.style.display = 'none'; UI.closeTrailer.classList.add('hidden'); UI.video.style.display = 'block'; UI.trailerFrame.src = ""; }
+
+        function updateUIWithTMDB(data, isSeries) {
+            UI.plot.innerText = data.overview || "Sinopse indisponível.";
+            if (data.backdrop_path) UI.bg.style.backgroundImage = `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,1)), url('https://image.tmdb.org/t/p/original${data.backdrop_path}')`;
+            updateMetaUI(data.vote_average?.toFixed(1), (data.first_air_date || data.release_date || '').split('-')[0], 'Geral', '');
+        }
+
+        function updateMetaUI(rating, date, genres, runtime) {
+            UI.metaLine.innerHTML = `<span class="text-green-500 font-bold">${rating} ★</span> | ${date} | ${genres} ${runtime ? '| ' + runtime : ''}`;
+            adjustTitleSize();
+        }
+
+        function setupLiveTvMode() {
+            UI.metaLine.innerHTML = `<span class="text-green-500">Ao Vivo</span>`;
+            UI.bg.style.backgroundImage = `url('https://images.unsplash.com/photo-1593784991095-a20506948430?q=80&w=2070')`;
+            document.getElementById('btnTrailer').style.display = 'none';
+        }
+
+        function cleanTitle(raw) {
+            let name = decodeURIComponent(raw);
+            name = name.replace(/\.(mp4|mkv|avi|ts|m3u8)$/i, '');
+            if (name.includes(': S')) return name.split(':')[0].trim();
+            name = name.replace(/S\d+E\d+.*/i, '');
+            name = name.replace(/\[.*?\]/g, '');
+            name = name.replace(/\(.*?\)/g, '');
+            const tags = ['4k', '1080p', '720p', '480p', 'hd', 'fhd', 'sd', 'dublado', 'legendado', 'dual', 'h264', 'x264', 'h265', 'aac', 'bluray', 'web-dl', 'webrip', 'camrip'];
+            const regexTags = new RegExp(`[ ._-](${tags.join('|')}).*`, 'i');
+            name = name.replace(regexTags, '');
+            name = name.replace(/[._-]/g, ' ');
+            name = name.replace(/\s+/g, ' ');
+            return name.trim();
+        }
+
+        function adjustTitleSize() {
+            const el = UI.title; const parent = el.parentElement; let size = 60;
+            el.style.fontSize = size + 'px';
+            while (el.scrollWidth > parent.clientWidth && size > 20) { size--; el.style.fontSize = size + 'px'; }
+        }
+
+        function checkConnection() {
+            if (socket.connected) { UI.proxyDot.classList.add('online'); UI.proxyText.textContent = 'Online'; }
+            else { UI.proxyDot.classList.remove('online'); UI.proxyText.textContent = 'Offline'; }
+        }
+        socket.on('connect', checkConnection); socket.on('disconnect', checkConnection);
+    </script>
+</body>
+
+</html>
