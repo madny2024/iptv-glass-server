@@ -316,6 +316,7 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
+        const BASE_URL = window.location.origin;
         let socket;
         let currentRoom = null;
         let connectionAttempts = 0;
@@ -514,4 +515,5 @@
         }
     </script>
 </body>
+
 </html>
