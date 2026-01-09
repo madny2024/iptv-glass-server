@@ -316,7 +316,12 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
+    // --- CORREÇÃO DE CONEXÃO ---
         const BASE_URL = window.location.origin;
+        const PROXY_ROOT = window.location.origin;
+    
+        // Configuração do Socket (Geralmente usado na Home)
+        const socket = io(PROXY_ROOT);
         let socket;
         let currentRoom = null;
         let connectionAttempts = 0;
@@ -517,3 +522,4 @@
 </body>
 
 </html>
+
